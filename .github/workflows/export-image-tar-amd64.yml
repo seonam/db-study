@@ -1,0 +1,33 @@
+name: export-image-tar-amd64
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Full image reference (e.g. python:3.14.2-slim)"
+        required: true
+        default: "python:3.14.2-slim"
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull amd64 & save to tar.gz
+        run: |
+          set -euo pipefail
+          IMG="${{ inputs.image }}"
+
+          docker pull --platform linux/amd64 "$IMG"
+
+          SAFE="${IMG//\//_}"
+          SAFE="${SAFE//:/_}"
+          SAFE="${SAFE//@/_}"
+
+          docker save "$IMG" -o "${SAFE}__linux_amd64.tar"
+          gzip -9 "${SAFE}__linux_amd64.tar"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-tar-linux-amd64
+          path: "*.tar.gz"
